@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cobbler-tftp.fullname" . }}
+  labels: {{- include "cobbler-tftp.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: tftp
+      protocol: UDP
+      name: tftp
+  selector: {{- include "cobbler-tftp.selectorLabels" . | nindent 4 }}
