@@ -1,0 +1,14 @@
+# IDEs
+.claude
+.idea
+.vscode
+
+# Ignore artifacts from "helm package"
+*.tgz
+
+# Ingore test values.yml in root folder
+./values.yml
+./values.yaml
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md
