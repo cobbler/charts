@@ -14,7 +14,7 @@ spec:
   containers:
     - args: ['{{ include "cobbler-tftp.fullname" . }}', '{{ .Values.service.port }}', '-c', 'status']
       command: ['tftp']
-      image: ghcr.io/cobbler/cobbler-tftp:v0.1.0a6
+      image: ghcr.io/cobbler/cobbler-tftp:v0.1.0a7
       name: tftp
       securityContext:
         readOnlyRootFilesystem: true
