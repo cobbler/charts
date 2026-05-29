@@ -1,15 +1,24 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "cobbler-tftp.fullname" . }}-test-connection"
-  labels:
-    {{- include "cobbler-tftp.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
+    ignore-check.kube-linter.io/default-service-account: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/no-liveness-probe: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/no-readiness-probe: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/restart-policy: "This is a Helm testcontainer"
+  labels:
+    {{- include "cobbler-tftp.labels" . | nindent 4 }}
+  name: "{{ include "cobbler-tftp.fullname" . }}-test-connection"
 spec:
   containers:
-    - name: tftp
-      image: ghcr.io/cobbler/cobbler-tftp:v0.1.0a6
+    - args: ['{{ include "cobbler-tftp.fullname" . }}', '{{ .Values.service.port }}', '-c', 'status']
       command: ['tftp']
-      args: ['{{ include "cobbler-tftp.fullname" . }}', '{{ .Values.service.port }}', '-c', 'status']
+      image: ghcr.io/cobbler/cobbler-tftp:v0.1.0a6
+      name: tftp
+      securityContext:
+        readOnlyRootFilesystem: true
   restartPolicy: Never
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000

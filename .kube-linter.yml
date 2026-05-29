@@ -1,5 +1,6 @@
-# Issues that affect me:
+# Issues that affect this repository:
 # - https://github.com/stackrox/kube-linter/issues/459
+# - https://github.com/stackrox/kube-linter/issues/1194
 
 checks:
   addAllBuiltIn: true
@@ -18,3 +19,4 @@ checks:
     - no-node-affinity # Set by user in values.yaml
     - no-rolling-update-strategy
     - non-isolated-pod  # We cannot know which network layout the user desiresclear
+    - sorted-keys  # We cannot ensure global order for labels and annotations. See gh#1194.
