@@ -1,15 +1,25 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "cobbler-web.fullname" . }}-test-connection"
-  labels:
-    {{- include "cobbler-web.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
+    ignore-check.kube-linter.io/default-service-account: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/latest-tag: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/no-liveness-probe: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/no-readiness-probe: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/restart-policy: "This is a Helm testcontainer"
+  labels:
+    {{- include "cobbler-web.labels" . | nindent 4 }}
+  name: "{{ include "cobbler-web.fullname" . }}-test-connection"
 spec:
   containers:
-    - name: wget
-      image: busybox
+    - args: ['-O', '-', '{{ include "cobbler-web.fullname" . }}:{{ .Values.service.port }}']
       command: ['wget']
-      args: ['{{ include "cobbler-web.fullname" . }}:{{ .Values.service.port }}']
+      image: busybox
+      name: wget
+      securityContext:
+        readOnlyRootFilesystem: true
   restartPolicy: Never
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000

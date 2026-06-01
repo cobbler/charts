@@ -46,8 +46,8 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 Selector labels
 */}}
 {{- define "cobbler-tftp.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "cobbler-tftp.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/name: {{ include "cobbler-tftp.name" . }}
 {{- end }}
 
 {{/*
