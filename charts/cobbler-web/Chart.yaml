@@ -2,8 +2,8 @@ apiVersion: v2
 name: cobbler-web
 description: A Helm Chart to host the Cobbler Web UI.
 type: application
-version: 0.1.2
-appVersion: "v0.0.1-rc4"
+version: 0.1.3
+appVersion: "v0.0.1-rc5"
 icon: https://avatars.githubusercontent.com/u/1179083?s=200&v=4
 maintainers:
   - name: SchoolGuy
