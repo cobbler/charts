@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "orthos2.fullname" . }}
+  labels:
+    {{- include "orthos2.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: static
+  selector:
+    {{- include "orthos2.selectorLabels" . | nindent 4 }}
