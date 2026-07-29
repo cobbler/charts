@@ -74,6 +74,31 @@ jobs:
         if: steps.list-changed.outputs.changed == 'true'
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
 
+      - name: Create Namespace and Env
+        run: |
+          kubectl create namespace ct-tests
+          kubectl create secret generic orthos2 \
+          --from-literal=NetboxToken='nbt_zs4YYi6Uo6IN.3qoyyTHhBugnUlPtwrMT9XfDgtvFPToyOiuQ9GHN' \
+          --from-literal=OIDCsecret='C8e10s83w6mWl46im3jX9XhzjwcRQ7DyamWFKPLOvVLeG3crBy86LbFjueqJ269yo7S7MoQP7xmZ33q4!' \
+          --from-literal=OrthosKey='xx3%7wbay2723)xqfhe+w$f5sj4z9!d&chlx7av%^15da$$w*b!' \
+          --namespace=ct-tests
+          kubectl create configmap orthos2-env \
+          --from-literal=ORTHOS2_NETBOX_AUTH_SCHEME=Bearer \
+          --from-literal=ORTHOS2_NETBOX_URL=http://netbox.orthos2.test:8081 \
+          --from-literal=ORTHOS2_SUPERUSER_PASSWORD=QGIzDq5RVYoP \
+          --from-literal=ORTHOS2_DB_ENGINE=django.db.backends.sqlite3 \
+          --from-literal=ALLOWED_HOSTS="orthos2 orthos.local localhost" \
+          --from-literal=CSRF_TRUSTED_ORIGINS=https://orthos2.orthos2.test \
+          --from-literal=CSRF_ALLOWED_ORIGIN=https://orthos2.orthos2.test \
+          --from-literal=CROSS_ORIGINS_WHITELIST=https://orthos2.orthos2.test \
+          --from-literal=OIDC_ENDPOINT=https://authentik.orthos2.test/application/o/orthos \
+          --from-literal=NETBOX_SUPERUSER_NAME=admin \
+          --from-literal=NETBOX_SUPERUSER_PASSWORD=K2jPoo7eKfad \
+          --namespace=ct-tests
+
       - name: Run chart-testing (install)
         if: steps.list-changed.outputs.changed == 'true'
-        run: ct install --target-branch ${{ github.event.repository.default_branch }}
+        run: |
+          ct install \
+            --target-branch ${{ github.event.repository.default_branch }} \
+            --namespace ct-tests

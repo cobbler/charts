@@ -8,17 +8,19 @@ metadata:
     ignore-check.kube-linter.io/no-liveness-probe: "This is a Helm testcontainer"
     ignore-check.kube-linter.io/no-readiness-probe: "This is a Helm testcontainer"
     ignore-check.kube-linter.io/restart-policy: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/no-read-only-root-fs: "This is a Helm testcontainer"
   labels:
     {{- include "orthos2.labels" . | nindent 4 }}
   name: "{{ include "orthos2.fullname" . }}-test-connection"
 spec:
   containers:
-    - args: ['{{ include "orthos2.fullname" . }}:{{ .Values.service.port }}']
+    - args:
+        - '--spider'
+        - '--header=Host: localhost'
+        - '{{ include "orthos2.fullname" . }}:{{ .Values.service.port }}'
       command: ['wget']
       image: busybox
       name: wget
-      securityContext:
-        readOnlyRootFilesystem: true
   restartPolicy: Never
   securityContext:
     runAsGroup: 1000

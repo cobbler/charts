@@ -134,14 +134,14 @@ livenessProbe:
     port: http
     httpHeaders:
       - name: Host
-        value: orthos2
+        value: "localhost"
 readinessProbe:
   httpGet:
     path: /
     port: http
     httpHeaders:
       - name: Host
-        value: orthos2
+        value: "localhost"
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
