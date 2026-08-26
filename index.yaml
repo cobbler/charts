@@ -43,6 +43,26 @@ entries:
     version: 0.1.0
   cobbler-web:
   - apiVersion: v2
+    appVersion: v1.0.0
+    created: "2026-08-26T08:53:19.935597215Z"
+    description: A Helm Chart to host the Cobbler Web UI.
+    digest: 2d555218aa62744ecb19857caaaa716b37bf7cd0c2a7126efbd1b380be62589b
+    home: https://github.com/cobbler/charts
+    icon: https://avatars.githubusercontent.com/u/1179083?s=200&v=4
+    keywords:
+    - Cobbler
+    maintainers:
+    - email: matrixfueller@gmail.com
+      name: SchoolGuy
+      url: https://github.com/SchoolGuy
+    name: cobbler-web
+    sources:
+    - https://github.com/cobbler/charts
+    type: application
+    urls:
+    - https://github.com/cobbler/charts/releases/download/cobbler-web-0.2.0/cobbler-web-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
     appVersion: v0.0.1-rc5
     created: "2026-06-10T11:08:31.768991112Z"
     description: A Helm Chart to host the Cobbler Web UI.
@@ -122,4 +142,4 @@ entries:
     urls:
     - https://github.com/cobbler/charts/releases/download/cobbler-web-0.1.0/cobbler-web-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-10T11:08:31.769013413Z"
+generated: "2026-08-26T08:53:19.935620889Z"
