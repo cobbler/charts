@@ -22,3 +22,14 @@ helm install cobbler/cobbler-web --generate-name
 ## Cobbler-TFTP
 
 At this point in time no Helm Chart is available for the TFTP server.
+
+## Orthos2
+
+This chart hosts [Orthos2](https://github.com/openSUSE/orthos2), SUSE's machine administration
+tool, deploying its web UI, taskmanager, and a static-assets nginx server. Unlike Cobbler-Web, it
+requires some manual setup (an external Postgres database and a few Secrets/ConfigMaps) before
+installing — see the [chart's README](charts/orthos2/README.md) for full instructions.
+
+```
+helm install orthos2 cobbler/orthos2
+```

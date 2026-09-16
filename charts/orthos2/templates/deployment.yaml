@@ -1,0 +1,297 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    ignore-check.kube-linter.io/env-value-from: "the orthos2 Secret is created out-of-band per charts/orthos2/README.md, not managed by this chart"
+    ignore-check.kube-linter.io/read-secret-from-env-var: "Django reads ORTHOS2_POSTGRES_PASSWORD as a plain env var at process start, matching orthos2/settings.py"
+  name: {{ include "orthos2.fullname" . }}
+  labels:
+    {{- include "orthos2.labels" . | nindent 4 }}
+    app-component: web
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "orthos2.selectorLabels" . | nindent 6 }}
+      app-component: web
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "orthos2.labels" . | nindent 8 }}
+        app-component: web
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      restartPolicy: Always
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "orthos2.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: orthos2-env
+          env:
+            - name: ORTHOS2_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: orthos2
+                  key: OrthosPostgresPassword
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            failureThreshold: 30
+            periodSeconds: 2
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    ignore-check.kube-linter.io/env-value-from: "the orthos2 Secret is created out-of-band per charts/orthos2/README.md, not managed by this chart"
+    ignore-check.kube-linter.io/read-secret-from-env-var: "Django reads ORTHOS2_POSTGRES_PASSWORD as a plain env var at process start, matching orthos2/settings.py"
+  name: {{ include "orthos2.fullname" . }}-taskmanager
+  labels:
+    {{- include "orthos2.labels" . | nindent 4 }}
+    app-component: taskmanager
+spec:
+  # The taskmanager's in-memory task queue has no distributed lock/leader
+  # election, so it must never run as more than one replica.
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "orthos2.selectorLabels" . | nindent 6 }}
+      app-component: taskmanager
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "orthos2.labels" . | nindent 8 }}
+        app-component: taskmanager
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      restartPolicy: Always
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "orthos2.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}-taskmanager
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: orthos2-env
+          env:
+            - name: ORTHOS2_MODE
+              value: taskmanager
+            - name: ORTHOS2_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: orthos2
+                  key: OrthosPostgresPassword
+          # The taskmanager process (`orthos-admin taskmanager --start`) never
+          # serves HTTP, so it declares no container port and uses exec-based
+          # probes instead of the httpGet probes used by web/static.
+          startupProbe:
+            exec:
+              command:
+                {{- toYaml .Values.taskmanagerProbe.exec.command | nindent 16 }}
+            failureThreshold: 30
+            periodSeconds: 2
+          livenessProbe:
+            exec:
+              command:
+                {{- toYaml .Values.taskmanagerProbe.exec.command | nindent 16 }}
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                {{- toYaml .Values.taskmanagerProbe.exec.command | nindent 16 }}
+            periodSeconds: 10
+            failureThreshold: 3
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.sshSecretName }}
+            - name: ssh-config
+              readOnly: true
+              mountPath: /var/lib/orthos2/.ssh
+            {{- end }}
+      volumes:
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.sshSecretName }}
+        - name: ssh-config
+          secret:
+            secretName: {{ .Values.sshSecretName }}
+            defaultMode: 0600
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+        ignore-check.kube-linter.io/run-as-non-root: "nginx upstream not configured for non-root execution"
+        ignore-check.kube-linter.io/privileged-ports: "nginx upstream not configured for non-root execution"
+  name: {{ include "orthos2.fullname" . }}-static
+  labels:
+    {{- include "orthos2.labels" . | nindent 4 }}
+    app-component: static
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "orthos2.selectorLabels" . | nindent 6 }}
+      app-component: static
+  template:
+    metadata:
+      labels:
+        {{- include "orthos2.labels" . | nindent 8 }}
+        app-component: static
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      restartPolicy: Always
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "orthos2.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}-static
+          securityContext:
+            readOnlyRootFilesystem: true
+          image: "{{ .Values.image.repositoryStatic }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: static-http
+              containerPort: 80
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /
+              port: 80
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            failureThreshold: 30
+            periodSeconds: 2
+          livenessProbe:  
+            httpGet:
+              path: /
+              port: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
