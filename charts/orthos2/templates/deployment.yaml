@@ -4,6 +4,7 @@ metadata:
   annotations:
     ignore-check.kube-linter.io/env-value-from: "the orthos2 Secret is created out-of-band per charts/orthos2/README.md, not managed by this chart"
     ignore-check.kube-linter.io/read-secret-from-env-var: "Django reads ORTHOS2_POSTGRES_PASSWORD as a plain env var at process start, matching orthos2/settings.py"
+    ignore-check.kube-linter.io/drop-net-raw-capability: "matches docker-compose's cap_add: NET_RAW, needed for raw-socket network checks (e.g. ping) when managing machines"
   name: {{ include "orthos2.fullname" . }}
   labels:
     {{- include "orthos2.labels" . | nindent 4 }}
@@ -47,6 +48,8 @@ spec:
             - configMapRef:
                 name: orthos2-env
           env:
+            - name: USER
+              value: orthos
             - name: ORTHOS2_POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -104,6 +107,7 @@ metadata:
   annotations:
     ignore-check.kube-linter.io/env-value-from: "the orthos2 Secret is created out-of-band per charts/orthos2/README.md, not managed by this chart"
     ignore-check.kube-linter.io/read-secret-from-env-var: "Django reads ORTHOS2_POSTGRES_PASSWORD as a plain env var at process start, matching orthos2/settings.py"
+    ignore-check.kube-linter.io/drop-net-raw-capability: "matches docker-compose's cap_add: NET_RAW, needed for raw-socket network checks (e.g. ping) when managing machines"
   name: {{ include "orthos2.fullname" . }}-taskmanager
   labels:
     {{- include "orthos2.labels" . | nindent 4 }}
@@ -147,6 +151,8 @@ spec:
             - configMapRef:
                 name: orthos2-env
           env:
+            - name: USER
+              value: orthos
             - name: ORTHOS2_MODE
               value: taskmanager
             - name: ORTHOS2_POSTGRES_PASSWORD
@@ -275,11 +281,11 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.volumeMounts }}
+          {{- with .Values.staticVolumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.volumes }}
+      {{- with .Values.staticVolumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}

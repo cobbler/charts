@@ -47,8 +47,10 @@ fullnameOverride: ""
 serviceAccount:
   # Specifies whether a service account should be created.
   create: true
-  # Automatically mount a ServiceAccount's API credentials?
-  automount: true
+  # Automatically mount a ServiceAccount's API credentials? None of orthos2's
+  # workloads (web, taskmanager, static) call the Kubernetes API, so this
+  # defaults to false.
+  automount: false
   # Annotations to add to the service account.
   annotations: {}
   # The name of the service account to use.
@@ -66,11 +68,16 @@ podSecurityContext: {}
   # fsGroup: 2000
 
 securityContext:
-  # capabilities:
-  #   drop:
-  #   - ALL
+  capabilities:
+    drop:
+      - ALL
+    add:
+      # Matches docker-compose's cap_add: NET_RAW on the orthos2/
+      # orthos2_taskmanager containers, needed for raw-socket network checks
+      # (e.g. ping) when managing machines.
+      - NET_RAW
   readOnlyRootFilesystem: true
-  runAsNonRoot: false
+  runAsNonRoot: true
   runAsUser: 499
 
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
@@ -238,6 +245,24 @@ volumeMounts:
     readOnly: true
     mountPath: /run/secrets/OrthosKey
     subPath: OrthosKey
+
+# Volumes/volumeMounts for the static (nginx) Deployment only. It serves
+# pre-baked static assets and needs no application secrets, the sqlite
+# database path, or the Django log dir - only writable /tmp and /run for
+# nginx's own runtime files under readOnlyRootFilesystem.
+staticVolumes:
+  - name: tmp
+    emptyDir: {}
+
+  - name: run
+    emptyDir: {}
+
+staticVolumeMounts:
+  - name: tmp
+    mountPath: /tmp
+
+  - name: run
+    mountPath: /run
 
 nodeSelector: {}
 
