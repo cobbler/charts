@@ -162,4 +162,19 @@ entries:
     urls:
     - https://github.com/cobbler/charts/releases/download/cobbler-web-0.1.0/cobbler-web-0.1.0.tgz
     version: 0.1.0
-generated: "2026-08-26T17:02:54.782127799Z"
+  orthos2:
+  - apiVersion: v2
+    appVersion: 1.13.0
+    created: "2026-09-17T10:51:45.510782607Z"
+    description: A Helm chart for Kubernetes
+    digest: 36734f88a030e934f954a29500e2bc5a1659df8839f832729cb45909601dc4f6
+    maintainers:
+    - email: matrixfueller@gmail.com
+      name: SchoolGuy
+      url: https://github.com/SchoolGuy
+    name: orthos2
+    type: application
+    urls:
+    - https://github.com/cobbler/charts/releases/download/orthos2-0.1.0/orthos2-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-09-17T10:51:45.510799123Z"
