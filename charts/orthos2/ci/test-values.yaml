@@ -1,0 +1,24 @@
+# Values used by `ct install`/`ct lint` (chart-testing auto-discovers every
+# *.yaml file under a chart's ci/ directory). These placeholder values let
+# the chart create its own orthos2 Secret and orthos2-env ConfigMap so the
+# shared .github/workflows/lint-test.yml needs no orthos2-specific steps.
+# Do not reuse these values for a real deployment.
+secrets:
+  create: true
+  netboxToken: "nbt_zs4YYi6Uo6IN.3qoyyTHhBugnUlPtwrMT9XfDgtvFPToyOiuQ9GHN"
+  oidcSecret: "C8e10s83w6mWl46im3jX9XhzjwcRQ7DyamWFKPLOvVLeG3crBy86LbFjueqJ269yo7S7MoQP7xmZ33q4!"
+  orthosKey: "xx3%7wbay2723)xqfhe+w$f5sj4z9!d&chlx7av%^15da$$w*b!"
+  postgresPassword: "ci-placeholder-password"
+
+env:
+  ORTHOS2_NETBOX_AUTH_SCHEME: Bearer
+  ORTHOS2_NETBOX_URL: "http://netbox.orthos2.test:8081"
+  ORTHOS2_SUPERUSER_PASSWORD: "QGIzDq5RVYoP"
+  ORTHOS2_DB_ENGINE: "django.db.backends.sqlite3"
+  ALLOWED_HOSTS: "orthos2 orthos.local localhost"
+  CSRF_TRUSTED_ORIGINS: "https://orthos2.orthos2.test"
+  CSRF_ALLOWED_ORIGIN: "https://orthos2.orthos2.test"
+  CROSS_ORIGINS_WHITELIST: "https://orthos2.orthos2.test"
+  OIDC_ENDPOINT: "https://authentik.orthos2.test/application/o/orthos"
+  NETBOX_SUPERUSER_NAME: admin
+  NETBOX_SUPERUSER_PASSWORD: "K2jPoo7eKfad"

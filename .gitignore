@@ -15,3 +15,10 @@
 
 #Ignore vscode AI rules
 .github/instructions/codacy.instructions.md
+
+#Ignore ENV files
+.env
+
+#Ignore files for local actions runner
+.actrc
+event.json
