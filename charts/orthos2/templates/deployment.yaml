@@ -155,6 +155,15 @@ spec:
               value: orthos
             - name: ORTHOS2_MODE
               value: taskmanager
+            # Targets the web Deployment's own Service regardless of the
+            # release name, so the taskmanager's readiness poll doesn't
+            # depend on fullnameOverride being forced to a fixed name (needed
+            # once multiple releases of this chart, e.g. staging + production,
+            # coexist under different release names).
+            - name: ORTHOS2_WEB_SERVICE_HOST
+              value: {{ include "orthos2.fullname" . }}
+            - name: ORTHOS2_WEB_SERVICE_PORT
+              value: {{ .Values.service.port | quote }}
             - name: ORTHOS2_POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
