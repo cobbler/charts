@@ -64,8 +64,15 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+# fsGroup must match securityContext.runAsGroup below: it's what makes
+# Kubernetes chown Secret/emptyDir volume contents (e.g. the SSH key mounted
+# via sshSecretName) to a group the pinned, non-root orthos user can actually
+# read - see the orthos2 repo's docker/orthos/production.dockerfile, which
+# pins the orthos user to this same UID/GID (499/486 rather than matching
+# numbers: GID 499 collides with another system group on the base image, so
+# the orthos group is pinned to 486 instead).
+podSecurityContext:
+  fsGroup: 486
 
 securityContext:
   capabilities:
@@ -79,6 +86,7 @@ securityContext:
   readOnlyRootFilesystem: true
   runAsNonRoot: true
   runAsUser: 499
+  runAsGroup: 486
 
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
@@ -190,6 +198,26 @@ taskmanagerProbe:
 # by orthos2/utils/ssh.py, used for Paramiko-based access to managed
 # machines). Leave empty to skip mounting it.
 sshSecretName: ""
+
+# Kubernetes Secret volumes are owned by root:root by default; combined with
+# podSecurityContext.fsGroup above, files in this Secret end up group-owned
+# by the pinned orthos GID, so their mode needs the group-read bit set for
+# the orthos2 process to actually read them (paramiko does not enforce the
+# owner-only 0600 that the OpenSSH CLI does, so group-readable is safe even
+# for the private key).
+sshSecretDefaultMode: 0640
+# Optional per-file permissions/paths, for when different files in the
+# secret need different modes (e.g. a more relaxed mode for the SSH client
+# config than for the private key it references). Keys must match what's
+# actually in the Secret named by sshSecretName. Leave empty to apply
+# sshSecretDefaultMode to every file in the secret instead.
+sshSecretItems: []
+  # - key: config
+  #   path: config
+  #   mode: 0644
+  # - key: master
+  #   path: master
+  #   mode: 0640
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:

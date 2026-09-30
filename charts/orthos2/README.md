@@ -80,7 +80,12 @@ kubectl create secret generic orthos2-ssh \
 ```
 
 This is mounted read-only at `/var/lib/orthos2/.ssh` in the taskmanager pod only (not the web or
-static pods), matching `$HOME/.ssh` as read by `orthos2/utils/ssh.py`.
+static pods), matching `$HOME/.ssh` as read by `orthos2/utils/ssh.py`. The taskmanager runs as a
+pinned, non-root user (`securityContext.runAsUser`/`runAsGroup`, matched by
+`podSecurityContext.fsGroup`), so Kubernetes chowns this Secret's files to that group; they're
+mounted group-readable (`sshSecretDefaultMode`, default `0640`) rather than owner-only `0600` so
+that user can actually read them. Set `sshSecretItems` instead of `sshSecretDefaultMode` if
+different files in the secret need different modes.
 
 ### 5. Install the chart
 
