@@ -31,6 +31,10 @@ spec:
         {{- end }}
     spec:
       restartPolicy: Always
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -134,6 +138,10 @@ spec:
         {{- end }}
     spec:
       restartPolicy: Always
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -211,7 +219,12 @@ spec:
         - name: ssh-config
           secret:
             secretName: {{ .Values.sshSecretName }}
-            defaultMode: 0600
+            {{- if .Values.sshSecretItems }}
+            items:
+              {{- toYaml .Values.sshSecretItems | nindent 14 }}
+            {{- else }}
+            defaultMode: {{ .Values.sshSecretDefaultMode }}
+            {{- end }}
         {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -254,6 +267,10 @@ spec:
         {{- end }}
     spec:
       restartPolicy: Always
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
