@@ -164,6 +164,20 @@ entries:
     version: 0.1.0
   orthos2:
   - apiVersion: v2
+    appVersion: "1.21"
+    created: "2026-09-30T12:54:04.695929675Z"
+    description: A Helm chart for Kubernetes
+    digest: f45ba19f2ff58e9a7bd626b81d49bebd6f4cdf19b3ecb6b863f1d956a4b170c0
+    maintainers:
+    - email: matrixfueller@gmail.com
+      name: SchoolGuy
+      url: https://github.com/SchoolGuy
+    name: orthos2
+    type: application
+    urls:
+    - https://github.com/cobbler/charts/releases/download/orthos2-0.3.0/orthos2-0.3.0.tgz
+    version: 0.3.0
+  - apiVersion: v2
     appVersion: "1.20"
     created: "2026-09-22T07:05:50.781244949Z"
     description: A Helm chart for Kubernetes
@@ -191,4 +205,4 @@ entries:
     urls:
     - https://github.com/cobbler/charts/releases/download/orthos2-0.1.0/orthos2-0.1.0.tgz
     version: 0.1.0
-generated: "2026-09-22T07:05:50.781271886Z"
+generated: "2026-09-30T12:54:04.695952878Z"
