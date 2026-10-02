@@ -21,7 +21,11 @@ helm install cobbler/cobbler-web --generate-name
 
 ## Cobbler-TFTP
 
-At this point in time no Helm Chart is available for the TFTP server.
+This chart will host the TFTP server for you.
+
+```
+helm install cobbler/cobbler-tftp --generate-name
+```
 
 ## Cobbler-HTTP-SD
 
