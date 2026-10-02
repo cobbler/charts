@@ -1,0 +1,9 @@
+1. cobbler-http-sd is an internal-only service (Prometheus HTTP service discovery adapter),
+   not meant to be reached from a browser. It is reachable from inside the cluster at:
+
+   http://{{ include "cobbler-http-sd.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}/sd
+
+2. To inspect its current target list from your own machine:
+   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "cobbler-http-sd.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:{{ .Values.service.port }}
+   curl http://127.0.0.1:8080/sd

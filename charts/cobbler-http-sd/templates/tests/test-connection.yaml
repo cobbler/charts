@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    "helm.sh/hook": test
+    ignore-check.kube-linter.io/default-service-account: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/latest-tag: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/no-liveness-probe: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/no-readiness-probe: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/restart-policy: "This is a Helm testcontainer"
+  labels:
+    {{- include "cobbler-http-sd.labels" . | nindent 4 }}
+  name: "{{ include "cobbler-http-sd.fullname" . }}-test-connection"
+spec:
+  containers:
+    - args: ['-O', '-', '{{ include "cobbler-http-sd.fullname" . }}:{{ .Values.service.port }}/healthz']
+      command: ['wget']
+      image: busybox
+      name: wget
+      securityContext:
+        readOnlyRootFilesystem: true
+  restartPolicy: Never
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000

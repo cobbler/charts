@@ -1,0 +1,9 @@
+# Values used by `ct install`/`ct lint` (chart-testing auto-discovers every *.yaml file
+# under a chart's ci/ directory). These placeholder values let the chart create its own
+# servers.json Secret so the shared .github/workflows/lint-test.yml needs no
+# cobbler-http-sd-specific steps. Do not reuse these values for a real deployment - a real
+# deployment should provision `configSecretName` out-of-band instead (see README.md).
+secrets:
+  create: true
+  serversJson: |
+    [{"url": "http://cobbler.example.com/cobbler_api"}]

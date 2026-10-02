@@ -23,6 +23,18 @@ helm install cobbler/cobbler-web --generate-name
 
 At this point in time no Helm Chart is available for the TFTP server.
 
+## Cobbler-HTTP-SD
+
+This chart deploys a Prometheus [HTTP service discovery](https://prometheus.io/docs/prometheus/latest/http_sd/)
+adapter for Cobbler: it queries the configured Cobbler servers' `get_systems()` on demand and
+serves the current host/BMC targets to Prometheus. It requires a Secret with the Cobbler server
+list to be provisioned out-of-band before installing — see the
+[chart's README](charts/cobbler-http-sd/README.md) for full instructions.
+
+```
+helm install cobbler-http-sd cobbler/cobbler-http-sd --set configSecretName=cobbler-http-sd-credentials
+```
+
 ## Orthos2
 
 This chart hosts [Orthos2](https://github.com/openSUSE/orthos2), SUSE's machine administration
