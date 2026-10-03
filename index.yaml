@@ -1,5 +1,28 @@
 apiVersion: v1
 entries:
+  cobbler-http-sd:
+  - apiVersion: v2
+    appVersion: "1.22"
+    created: "2026-10-03T08:32:42.339111444Z"
+    description: A Helm chart for the Cobbler Prometheus HTTP service discovery adapter.
+    digest: e339c14d6ff8c8516bc99ee7d8407949cff858e304a28e23ca7c4aa8b875cb2b
+    home: https://github.com/cobbler/charts
+    keywords:
+    - Cobbler
+    - Prometheus
+    - Orthos2
+    maintainers:
+    - email: matrixfueller@gmail.com
+      name: SchoolGuy
+      url: https://github.com/SchoolGuy
+    name: cobbler-http-sd
+    sources:
+    - https://github.com/cobbler/charts
+    - https://github.com/openSUSE/orthos2
+    type: application
+    urls:
+    - https://github.com/cobbler/charts/releases/download/cobbler-http-sd-0.1.0/cobbler-http-sd-0.1.0.tgz
+    version: 0.1.0
   cobbler-tftp:
   - apiVersion: v2
     appVersion: v0.1.0a7
@@ -164,6 +187,20 @@ entries:
     version: 0.1.0
   orthos2:
   - apiVersion: v2
+    appVersion: "1.22"
+    created: "2026-10-03T08:32:42.532314193Z"
+    description: A Helm chart for Kubernetes
+    digest: 791d50c3161e7bb426638d549de3536ef676f88f3a415a97db7a392abcb14b78
+    maintainers:
+    - email: matrixfueller@gmail.com
+      name: SchoolGuy
+      url: https://github.com/SchoolGuy
+    name: orthos2
+    type: application
+    urls:
+    - https://github.com/cobbler/charts/releases/download/orthos2-0.4.0/orthos2-0.4.0.tgz
+    version: 0.4.0
+  - apiVersion: v2
     appVersion: "1.21"
     created: "2026-09-30T12:54:04.695929675Z"
     description: A Helm chart for Kubernetes
@@ -205,4 +242,4 @@ entries:
     urls:
     - https://github.com/cobbler/charts/releases/download/orthos2-0.1.0/orthos2-0.1.0.tgz
     version: 0.1.0
-generated: "2026-09-30T12:54:04.695952878Z"
+generated: "2026-10-03T08:32:42.532359629Z"
