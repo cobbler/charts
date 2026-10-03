@@ -1,0 +1,19 @@
+apiVersion: v2
+name: cobbler-http-sd
+description: A Helm chart for the Cobbler Prometheus HTTP service discovery adapter.
+type: application
+version: 0.1.0
+# Tracks the orthos2 app version the cobbler-http-sd image is built/tagged alongside.
+appVersion: "1.22"
+maintainers:
+  - name: SchoolGuy
+    email: matrixfueller@gmail.com
+    url: https://github.com/SchoolGuy
+home: https://github.com/cobbler/charts
+sources:
+  - https://github.com/cobbler/charts
+  - https://github.com/openSUSE/orthos2
+keywords:
+  - Cobbler
+  - Prometheus
+  - Orthos2
