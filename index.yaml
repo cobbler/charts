@@ -185,6 +185,34 @@ entries:
     urls:
     - https://github.com/cobbler/charts/releases/download/cobbler-web-0.1.0/cobbler-web-0.1.0.tgz
     version: 0.1.0
+  cobblerd:
+  - annotations:
+      artifacthub.io/prerelease: "true"
+    apiVersion: v2
+    appVersion: v4.0.0b11
+    created: "2026-11-17T15:34:41.646297985Z"
+    description: 'NOT PRODUCTION READY: A Helm chart to host the Cobbler backend (the
+      cobblerd XML-RPC daemon and its HTTP/XML-RPC API). See the chart README''s Known
+      Limitations section before using it.'
+    digest: 09fe5dc91e8169e3a56f2057c3d830f590ec894a1b0fce0a18233898f064e718
+    home: https://github.com/cobbler/charts
+    icon: https://avatars.githubusercontent.com/u/1179083?s=200&v=4
+    keywords:
+    - Cobbler
+    - PXE
+    - provisioning
+    maintainers:
+    - email: matrixfueller@gmail.com
+      name: SchoolGuy
+      url: https://github.com/SchoolGuy
+    name: cobblerd
+    sources:
+    - https://github.com/cobbler/charts
+    - https://github.com/cobbler/cobbler
+    type: application
+    urls:
+    - https://github.com/cobbler/charts/releases/download/cobblerd-0.1.0/cobblerd-0.1.0.tgz
+    version: 0.1.0
   orthos2:
   - apiVersion: v2
     appVersion: "1.23"
@@ -256,4 +284,4 @@ entries:
     urls:
     - https://github.com/cobbler/charts/releases/download/orthos2-0.1.0/orthos2-0.1.0.tgz
     version: 0.1.0
-generated: "2026-11-02T11:50:24.735140439Z"
+generated: "2026-11-17T15:34:41.646319301Z"
