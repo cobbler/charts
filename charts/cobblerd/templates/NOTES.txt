@@ -1,0 +1,40 @@
+NOT PRODUCTION READY -- see this chart's README.md "Known Limitations" section (ISO loop-mount
+support is unverified, and a real GitHub Actions CI run with the current fixes hasn't happened
+yet) before relying on this deployment.
+
+Cobbler's backend is now running: {{ include "cobblerd.fullname" . }} (cobblerd{{ if .Values.httpApi.enabled }} + http-api{{ end }}).
+
+1. Reach the XML-RPC API from inside the cluster:
+   http://{{ include "cobblerd.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.xmlrpcPort }}/
+
+   Or from your machine:
+     kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "cobblerd.fullname" . }} {{ .Values.service.xmlrpcPort }}:{{ .Values.service.xmlrpcPort }}
+     cobbler --server=http://127.0.0.1:{{ .Values.service.xmlrpcPort }} version
+
+{{- if .Values.httpApi.enabled }}
+
+2. Reach the HTTP/XML-RPC API (templated files, /httpboot, /images, /sso_login) from inside the cluster:
+   http://{{ include "cobblerd.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpApiPort }}/
+
+   Or from your machine:
+     kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "cobblerd.fullname" . }} {{ .Values.service.httpApiPort }}:{{ .Values.service.httpApiPort }}
+     curl http://127.0.0.1:{{ .Values.service.httpApiPort }}/healthz
+{{- if .Values.ingress.enabled }}
+
+   It is also reachable externally via the configured Ingress:
+   {{- range .Values.ingress.hosts }}
+   {{- range .paths }}
+   http://{{ .host }}{{ .path }}
+   {{- end }}
+   {{- end }}
+{{- end }}
+{{- end }}
+
+IMPORTANT -- please read this chart's README.md "Known Limitations" section:
+  * NOT PRODUCTION READY: verified manually with k3d, but not yet via the real GitHub Actions
+    "ct install" CI pipeline, and ISO loop-mount support is unverified.
+  * The "cobblerd" container runs privileged, as root, by design (ISO loop-mount support).
+  * Cobbler cannot signal or restart DHCP/DNS/TFTP sidecar Pods in Kubernetes; leave
+    manage_dhcp_v4/manage_dhcp_v6/manage_dns/manage_tftpd disabled unless you have your
+    own reload mechanism for those sidecars.
+  * This chart requires Kubernetes >= 1.29 (native sidecar container support).

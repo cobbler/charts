@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels: {{- include "cobblerd.labels" . | nindent 4 }}
+  name: {{ include "cobblerd.fullname" . }}
+spec:
+  ports:
+    - name: xmlrpc
+      port: {{ .Values.service.xmlrpcPort }}
+      protocol: TCP
+      # By number, not by name: when httpApi.enabled, "cobblerd" runs as a
+      # native sidecar initContainer, and this Service's named-port
+      # resolution against initContainer ports is not reliable across
+      # Kubernetes/kube-proxy versions (observed: zero Endpoints resolved
+      # for a by-name targetPort sourced from an initContainer on k3s
+      # v1.31.5, even though the sidecar was Running). A numeric targetPort
+      # sidesteps container-port-name lookup entirely.
+      targetPort: {{ .Values.service.xmlrpcPort }}
+    {{- if .Values.httpApi.enabled }}
+    - name: http-api
+      port: {{ .Values.service.httpApiPort }}
+      protocol: TCP
+      targetPort: http-api
+    {{- end }}
+  selector: {{- include "cobblerd.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.service.type }}

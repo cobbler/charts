@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    "helm.sh/hook": test
+    ignore-check.kube-linter.io/default-service-account: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/no-liveness-probe: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/no-readiness-probe: "This is a Helm testcontainer"
+    ignore-check.kube-linter.io/restart-policy: "This is a Helm testcontainer"
+  labels:
+    {{- include "cobblerd.labels" . | nindent 4 }}
+  name: "{{ include "cobblerd.fullname" . }}-test-connection"
+spec:
+  containers:
+    # Uses the cobblerd image itself (it already has python3) rather than
+    # busybox, and talks to the Service DNS name rather than localhost: the
+    # point of this test is to validate the Service object actually routes
+    # to the Pod, which a probe running inside the Pod itself cannot check.
+    - name: test-connection
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+      command: ["python3", "-c"]
+      args:
+        - |
+          import sys
+          import xmlrpc.client
+
+          client = xmlrpc.client.ServerProxy("http://{{ include "cobblerd.fullname" . }}:{{ .Values.service.xmlrpcPort }}/")
+          if client.ping() is not True:
+              print("cobblerd XML-RPC ping() failed", file=sys.stderr)
+              sys.exit(1)
+          print("cobblerd XML-RPC ping() OK")
+          {{- if .Values.httpApi.enabled }}
+
+          import urllib.request
+
+          with urllib.request.urlopen("http://{{ include "cobblerd.fullname" . }}:{{ .Values.service.httpApiPort }}/healthz", timeout=10) as resp:
+              if resp.status != 200:
+                  print(f"http-api /healthz returned {resp.status}", file=sys.stderr)
+                  sys.exit(1)
+          print("http-api /healthz OK")
+          {{- end }}
+      securityContext:
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 1000
+  restartPolicy: Never
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000

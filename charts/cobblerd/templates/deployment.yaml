@@ -1,0 +1,195 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # The "cobblerd" container intentionally runs privileged/as root -- see
+    # this chart's README "Known Limitations" section (ISO loop-mount
+    # support). Scoped to this Deployment, not .kube-linter.yml, so the
+    # repo's other (unprivileged) charts keep full linting coverage. These
+    # must live on the Deployment's own annotations, not its Pod template's
+    # -- kube-linter reads ignore-check directives from the object it's
+    # actually reporting the finding against.
+    ignore-check.kube-linter.io/privileged-container: "cobblerd requires root/privileged for ISO loop-mount support"
+    ignore-check.kube-linter.io/run-as-non-root: "cobblerd requires root/privileged for ISO loop-mount support"
+    ignore-check.kube-linter.io/privilege-escalation-container: "cobblerd requires root/privileged for ISO loop-mount support"
+    ignore-check.kube-linter.io/no-read-only-root-fs: "cobblerd requires root/privileged for ISO loop-mount support"
+  labels:
+    {{- include "cobblerd.labels" . | nindent 4 }}
+  name: {{ include "cobblerd.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  # cobblerd's state lives on a single RWO-friendly volume; running two
+  # replicas against it at once (as a rolling update briefly would) is unsafe.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "cobblerd.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "cobblerd.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.httpApi.enabled }}
+      # "cobblerd" runs as a native sidecar (restartPolicy: Always init
+      # container, stable since Kubernetes 1.29): kubelet waits for its
+      # startupProbe to succeed before starting "http-api" below, mirroring
+      # compose.yml's "http-api: depends_on: cobblerd: condition:
+      # service_healthy", and keeps it running for the Pod's whole lifetime.
+      initContainers:
+        {{- include "cobblerd.seedDataInitContainer" . | nindent 8 }}
+        - name: cobblerd
+          restartPolicy: Always
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["cobblerd", "-F"]
+          ports:
+            - containerPort: 25151
+              name: xmlrpc
+              protocol: TCP
+          {{- with .Values.cobblerd.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.cobblerd.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.cobblerd.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.cobblerd.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- include "cobblerd.cobblerdVolumeMounts" . | nindent 12 }}
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      containers:
+        - name: http-api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["gunicorn", "cobbler.services:application", "--bind", "0.0.0.0:8000"]
+          env:
+            # cobblerd and http-api share one Pod/network namespace, so the
+            # XML-RPC backend is always reachable on loopback -- no cross-Pod
+            # Service hop needed. See cobbler/services/svc.py and files.py.
+            - name: COBBLER_XMLRPC_HOST
+              value: "127.0.0.1"
+          ports:
+            - containerPort: 8000
+              name: http-api
+              protocol: TCP
+          {{- with .Values.httpApi.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.httpApi.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.httpApi.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.httpApi.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /srv/www/cobbler
+              subPath: webdir
+              readOnly: true
+            - name: data
+              mountPath: /srv/tftpboot
+              subPath: tftpboot
+              readOnly: true
+            - name: settings
+              mountPath: /etc/cobbler/settings.yaml
+              subPath: settings.yaml
+              readOnly: true
+            # readOnlyRootFilesystem leaves no writable /tmp -- gunicorn's
+            # worker processes need one (WorkerTmp) to start at all.
+            - name: tmp
+              mountPath: /tmp
+      {{- else }}
+      initContainers:
+        {{- include "cobblerd.seedDataInitContainer" . | nindent 8 }}
+      containers:
+        - name: cobblerd
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["cobblerd", "-F"]
+          ports:
+            - containerPort: 25151
+              name: xmlrpc
+              protocol: TCP
+          {{- with .Values.cobblerd.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.cobblerd.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.cobblerd.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- include "cobblerd.cobblerdVolumeMounts" . | nindent 12 }}
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: Always
+      serviceAccountName: {{ include "cobblerd.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "cobblerd.pvcName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: settings
+          configMap:
+            name: {{ include "cobblerd.fullname" . }}
+        {{- if .Values.httpApi.enabled }}
+        - name: tmp
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
