@@ -5,6 +5,7 @@ This file provides guidance to AI Agents when working with code in this reposito
 ## Project Overview
 
 This repository contains Helm charts for Cobbler, a network installation server. Currently includes:
+- **cobblerd**: The Cobbler backend (XML-RPC daemon + HTTP/XML-RPC API)
 - **cobbler-web**: Stateless Web UI frontend for Cobbler
 - **cobbler-tftp**: TFTP server component for network booting
 
@@ -14,6 +15,19 @@ Charts are automatically published to GitHub Pages via chart-releaser on merges 
 
 ```
 charts/
+├── cobblerd/              # Cobbler backend chart (cobblerd + http-api)
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   └── templates/
+│       ├── deployment.yaml
+│       ├── service.yaml
+│       ├── serviceaccount.yaml
+│       ├── configmap.yaml
+│       ├── pvc.yaml
+│       ├── ingress.yaml
+│       ├── networkpolicy.yaml
+│       ├── _helpers.tpl
+│       └── tests/
 ├── cobbler-web/           # Web UI chart
 │   ├── Chart.yaml         # Chart metadata and version
 │   ├── values.yaml        # Default configuration values
@@ -96,6 +110,26 @@ On merge to main:
 
 ## Chart Architecture
 
+### cobblerd
+- **NOT PRODUCTION READY**: manually verified with `k3d` + `helm test` (both `httpApi.enabled`
+  true/false), which found and fixed three real bugs (missing seed data for `/var/lib/cobbler`,
+  no writable `/tmp` for `http-api`, and a Service `targetPort` that silently resolved to zero
+  Endpoints when sourced from a sidecar init container) — see the chart's own README "Known
+  Limitations" for detail. Not yet run through the real GitHub Actions `ct install` CI pipeline
+  with these fixes, and the privileged `cobblerd` container's ISO loop-mount capability is
+  unverified.
+- **Purpose**: Hosts the Cobbler backend: the `cobblerd` XML-RPC daemon and, by default, its
+  companion `http-api` Gunicorn process, as two containers of one Pod sharing one state volume.
+- **State**: File-backed (collections, signature cache, webdir, tftproot). `replicaCount` is
+  fixed at `1`; the Deployment uses `strategy: Recreate`.
+- **Service**: Multi-port `ClusterIP` — `xmlrpc` (25151) always, `http-api` (8000) when
+  `httpApi.enabled`.
+- **Probes**: `cobblerd` uses an exec TCP-connect check; `http-api` uses `httpGet /healthz`.
+- **Important**: `cobblerd` runs `privileged: true`/`runAsUser: 0` by design (ISO loop-mount
+  support) — the one chart in this repo that intentionally does not run unprivileged. `http-api`
+  runs non-root. Requires Kubernetes >= 1.29 for `http-api`'s native-sidecar startup ordering on
+  `cobblerd`. See the chart's own `README.md` "Known Limitations" section for the full rationale.
+
 ### cobbler-web
 - **Purpose**: Hosts the Cobbler Web UI
 - **State**: Stateless (no persistent volumes needed)
@@ -120,13 +154,19 @@ Several checks are excluded in `.kube-linter.yml` because they're not applicable
 
 ## Template Helpers
 
-Both charts use `_helpers.tpl` for consistent naming:
-- `cobbler-web.fullname` / `cobbler-tftp.fullname`: Full resource name
-- `cobbler-web.name` / `cobbler-tftp.name`: Chart name
-- `cobbler-web.chart` / `cobbler-tftp.chart`: Chart label
-- `cobbler-web.labels` / `cobbler-tftp.labels`: Common labels
-- `cobbler-web.selectorLabels` / `cobbler-tftp.selectorLabels`: Selector labels
-- `cobbler-web.serviceAccountName` / `cobbler-tftp.serviceAccountName`: Service account name
+All charts use `_helpers.tpl` for consistent naming, e.g. for `cobblerd`:
+- `cobblerd.fullname`: Full resource name
+- `cobblerd.name`: Chart name
+- `cobblerd.chart`: Chart label
+- `cobblerd.labels`: Common labels
+- `cobblerd.selectorLabels`: Selector labels
+- `cobblerd.serviceAccountName`: Service account name
+- `cobblerd.pvcName`: PVC name (chart-managed or `persistence.existingClaim`)
+- `cobblerd.cobblerdVolumeMounts`: Shared volumeMounts for the `cobblerd` container, used whether
+  it's the sole container or the `http-api`-gating sidecar initContainer
+
+The same pattern (`<chart-name>.fullname`, `.name`, `.chart`, `.labels`, `.selectorLabels`,
+`.serviceAccountName`) applies to `cobbler-web`/`cobbler-tftp`/etc.
 
 When modifying templates, use these helpers for consistency rather than hardcoding names.
 

@@ -1,0 +1,24 @@
+apiVersion: v2
+name: cobblerd
+description: "NOT PRODUCTION READY: A Helm chart to host the Cobbler backend (the cobblerd XML-RPC daemon and its HTTP/XML-RPC API). See the chart README's Known Limitations section before using it."
+type: application
+version: 0.1.0
+appVersion: "v4.0.0b11"
+icon: https://avatars.githubusercontent.com/u/1179083?s=200&v=4
+annotations:
+  # https://artifacthub.io/docs/topics/annotations/helm/ -- flags this chart as a
+  # pre-release/not production ready on Artifact Hub and in tooling that reads this
+  # annotation, in addition to the explicit warnings in README.md/NOTES.txt.
+  artifacthub.io/prerelease: "true"
+maintainers:
+  - name: SchoolGuy
+    email: matrixfueller@gmail.com
+    url: https://github.com/SchoolGuy
+home: https://github.com/cobbler/charts
+sources:
+  - https://github.com/cobbler/charts
+  - https://github.com/cobbler/cobbler
+keywords:
+  - Cobbler
+  - PXE
+  - provisioning

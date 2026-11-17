@@ -1,0 +1,272 @@
+# Default values for cobblerd.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# cobblerd owns file-backed collection state (serializer, signature cache) behind
+# a single RWO-friendly volume; it cannot be scaled horizontally or rolled with
+# more than one replica at a time. This value exists for consistency with the
+# other charts in this repository, but changing it away from 1 is not supported.
+replicaCount: 1
+
+# This sets the container image. Both the "cobblerd" and "http-api" containers
+# below use this same image: it bundles both roles and selects between them
+# purely via the container "command:" (see cobbler's
+# docker/images/cobblerd/Dockerfile).
+image:
+  repository: ghcr.io/cobbler/cobblerd
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Neither "cobblerd" nor "http-api" ever call the Kubernetes API, so there
+  # is no reason to mount a token they'd never use.
+  automount: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# This is for setting Kubernetes Annotations to a Pod.
+podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+podLabels: {}
+
+# fsGroup lets the non-root "http-api" container (uid 1000 below) write the
+# volumes it shares with "cobblerd" (e.g. the webdir/tftproot directories).
+podSecurityContext:
+  fsGroup: 1000
+
+# -----------------------------------------------------------------------------
+# The "cobblerd" role: the XML-RPC daemon ("cobblerd -F") that owns all
+# collection state.
+#
+# Unlike every other chart in this repository, this container is REQUIRED to
+# run as root/privileged: Cobbler needs real root (e.g. loop-mounting ISOs
+# during "cobbler import") that cannot be granted safely or reliably to a
+# non-root/unprivileged Pod. Do not change "securityContext" below to a
+# non-root profile without first verifying every action your deployment
+# relies on -- especially ISO-based imports/buildiso -- still works without
+# it; see this chart's README "Known Limitations" section.
+# -----------------------------------------------------------------------------
+cobblerd:
+  securityContext:
+    privileged: true
+    runAsUser: 0
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 256Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 256Mi
+
+  # Identical to the command the image's own Dockerfile HEALTHCHECK already
+  # uses -- a real TCP connect to cobblerd's own XML-RPC port.
+  livenessProbe:
+    exec:
+      command:
+        - python3
+        - -c
+        - "import socket; socket.create_connection(('localhost', 25151), 2)"
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  # When httpApi.enabled is true, "cobblerd" runs as a native sidecar
+  # (initContainer with restartPolicy: Always); this startupProbe is what
+  # kubelet waits on before starting the "http-api" container, so it must
+  # succeed before cobblerd is considered up. Requires Kubernetes >= 1.29.
+  startupProbe:
+    exec:
+      command:
+        - python3
+        - -c
+        - "import socket; socket.create_connection(('localhost', 25151), 2)"
+    periodSeconds: 5
+    failureThreshold: 30
+
+# -----------------------------------------------------------------------------
+# The "http-api" role: Gunicorn serving cobbler.services:application
+# (/cblr/svc, /httpboot, /images, /healthz, /sso_login). Without it, a
+# meaningful chunk of Cobbler's functionality (templated kickstart/preseed
+# delivery, HTTP-served boot files, SSO login) is unavailable. Set
+# "enabled: false" to deploy the bare "cobblerd" XML-RPC daemon on its own.
+# -----------------------------------------------------------------------------
+httpApi:
+  enabled: true
+  # Unlike "cobblerd", http-api only serves already-built files -- it
+  # performs no ISO/mount operations itself, so it keeps a conventional
+  # non-root profile.
+  securityContext:
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 1000
+  resources: {}
+  # Real "ping()" round-trips through to cobblerd via /healthz, a stronger
+  # signal than a raw TCP check.
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: http-api
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: http-api
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  type: ClusterIP
+  xmlrpcPort: 25151
+  # Only rendered when httpApi.enabled is true.
+  httpApiPort: 8000
+
+# Rendered verbatim into the ConfigMap's "settings.yaml" key, mirroring
+# cobbler's docker/compose/base.yml "cobbler-settings" config.
+#
+# manage_tftpd/manage_dhcp_v4/manage_dhcp_v6/manage_dns are intentionally
+# all false: Cobbler has no way to signal a DHCP/DNS/TFTP sidecar Pod to pick
+# up regenerated config in Kubernetes (no Docker-socket equivalent the way
+# compose's modules.process_management.module: "docker" backend has), so
+# turning these on only writes files nothing ever reloads. Read this chart's
+# README "Known Limitations" section before changing them.
+#
+# SECURITY: "authorization.allowall" + "xmlrpc_bind_address_v4: 0.0.0.0" means
+# every XML-RPC method (including state-mutating ones) is reachable, with no
+# access control, from anywhere the Service/NetworkPolicy allows -- which, by
+# default, is the whole cluster network (see "networkPolicy" below, off by
+# default). This mirrors cobbler's own docker-compose reference stack so the
+# chart works out of the box, but is not an acceptable default for a shared
+# or multi-tenant cluster: switch "modules.authorization.module" to a real
+# backend (e.g. "authorization.configfile" with an explicit admin list) and
+# provision real credentials (see "volumes"/"volumeMounts" below for mounting
+# a custom /etc/cobbler/users.digest) before any non-evaluation use. See this
+# chart's README "Known Limitations" section.
+settings:
+  xmlrpc_bind_address_v4: "0.0.0.0"
+  tftpboot_location: "/srv/tftpboot"
+  webdir: "/srv/www/cobbler"
+  manage_tftpd: false
+  manage_dhcp_v4: false
+  manage_dhcp_v6: false
+  manage_dns: false
+  bind_zonefile_path: "/var/lib/named"
+  modules:
+    authentication:
+      module: "authentication.configfile"
+      hash_algorithm: "sha3_512"
+    authorization:
+      # See the SECURITY note above before using this chart beyond evaluation.
+      module: "authorization.allowall"
+    dns:
+      module: "managers.bind"
+    dhcp:
+      module: "managers.isc"
+    httpd:
+      module: "managers.dynamic_httpd"
+    tftpd:
+      module: "managers.dynamic_tftp"
+    serializers:
+      module: "serializers.file"
+
+# Rendered verbatim into the ConfigMap's "logging_config.conf" key: stdout
+# only (containers log to stdout, not to a file that would need its own
+# volume/rotation). Defaults to INFO -- quieter than compose's own
+# development stack, which defaults to DEBUG.
+logging:
+  level: INFO
+
+# cobblerd's state (collections, signature cache, webdir, tftproot, etc.)
+# defaults to an ephemeral emptyDir so this chart installs cleanly with no
+# StorageClass assumptions (e.g. in CI against a vanilla kind cluster). Set
+# "enabled: true" for a real deployment so this data survives Pod restarts.
+persistence:
+  enabled: false
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 5Gi
+  # Use an existing PersistentVolumeClaim instead of letting the chart create one.
+  existingClaim: ""
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: users-digest
+#   secret:
+#     secretName: cobblerd-users-digest
+
+# Additional volumeMounts on the output Deployment's "cobblerd" container,
+# e.g. to mount a custom /etc/cobbler/users.digest from the Secret declared
+# in "volumes" above -- this chart ships no users.digest/auth management of
+# its own since the health/test probes (ping(), /healthz) need no auth.
+volumeMounts: []
+# - name: users-digest
+#   mountPath: /etc/cobbler/users.digest
+#   subPath: users.digest
+#   readOnly: true
+
+# Only used when httpApi.enabled is also true.
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: cobbler.local
+      paths:
+        - path: /cblr
+          pathType: Prefix
+        - path: /httpboot
+          pathType: Prefix
+        - path: /images
+          pathType: Prefix
+        - path: /sso_login
+          pathType: Prefix
+  tls: []
+  #  - secretName: cobbler-tls
+  #    hosts:
+  #      - cobbler.local
+
+# Off by default: this chart cannot know your cluster's topology (e.g. which
+# namespace cobbler-web/cobbler-tftp live in), so a default-enabled policy
+# would either break legitimate cross-component access or be too permissive
+# to matter. Enabling it with "ingress" filled in for your own topology is
+# recommended hardening given the "settings.modules.authorization.allowall"
+# default above -- without it, anything in the cluster network can reach
+# cobblerd's unauthenticated, privileged XML-RPC API.
+networkPolicy:
+  enabled: false
+  # NetworkPolicyIngressRule entries, rendered verbatim. The chart has no
+  # safe default narrower than "same namespace" that still works out of the
+  # box, so provide your own based on where cobbler-web/cobbler-tftp/your
+  # admin tooling actually run.
+  ingress: []
+  # - from:
+  #     - namespaceSelector: {}
+  #   ports:
+  #     - protocol: TCP
+  #       port: 25151
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

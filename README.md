@@ -8,7 +8,16 @@ helm repo add cobbler https://cobbler.github.io/charts/
 
 ## Cobbler
 
-At this point in time no Helm Chart is available for the backend.
+**NOT PRODUCTION READY.** This chart deploys the Cobbler backend: the `cobblerd` XML-RPC daemon
+and, by default, its companion HTTP/XML-RPC API. It has been manually verified end-to-end against
+a real `k3d` cluster, but not yet through the real CI pipeline with its current fixes, and its
+ISO loop-mount capability is unverified — see the [chart's README](charts/cobblerd/README.md) for
+scope, known limitations (it runs privileged/as root by design, requires Kubernetes >= 1.29, and
+cannot signal DHCP/DNS/TFTP sidecars), and full configuration instructions before using it.
+
+```
+helm install cobblerd cobbler/cobblerd
+```
 
 ## Cobbler-Web
 
