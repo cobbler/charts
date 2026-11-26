@@ -105,6 +105,10 @@ volumes:
   emptyDir:
     medium: Memory
     sizeLimit: 128Mi
+- name: nginx-conf
+  emptyDir:
+    medium: Memory
+    sizeLimit: 16Mi
 # - name: foo
 #   secret:
 #     secretName: mysecret
@@ -116,6 +120,8 @@ volumeMounts:
   mountPath: /tmp
 - name: nginx-cache
   mountPath: /var/cache/nginx
+- name: nginx-conf
+  mountPath: /etc/nginx/conf.d
 # - name: foo
 #   mountPath: "/etc/foo"
 #   readOnly: true
