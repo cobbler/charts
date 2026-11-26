@@ -13,6 +13,12 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
+# Additional environment variables for the container, e.g. COBBLER_WEB_BASE_PATH or
+# COBBLER_WEB_ABSOLUTE_REDIRECT (see docs-additonal/deployment.md in the cobbler-web repo).
+env: []
+# - name: COBBLER_WEB_ABSOLUTE_REDIRECT
+#   value: "off"
+
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 # This is to override the chart name.
