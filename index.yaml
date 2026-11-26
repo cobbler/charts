@@ -67,6 +67,26 @@ entries:
   cobbler-web:
   - apiVersion: v2
     appVersion: v1.3.0
+    created: "2026-11-26T16:08:12.815950236Z"
+    description: A Helm Chart to host the Cobbler Web UI.
+    digest: f420fe96d52a8096ffc84b2c51474bac4591bdb8f7a765ba525db240f06d8c5d
+    home: https://github.com/cobbler/charts
+    icon: https://avatars.githubusercontent.com/u/1179083?s=200&v=4
+    keywords:
+    - Cobbler
+    maintainers:
+    - email: matrixfueller@gmail.com
+      name: SchoolGuy
+      url: https://github.com/SchoolGuy
+    name: cobbler-web
+    sources:
+    - https://github.com/cobbler/charts
+    type: application
+    urls:
+    - https://github.com/cobbler/charts/releases/download/cobbler-web-0.3.1/cobbler-web-0.3.1.tgz
+    version: 0.3.1
+  - apiVersion: v2
+    appVersion: v1.3.0
     created: "2026-11-26T15:45:10.499764692Z"
     description: A Helm Chart to host the Cobbler Web UI.
     digest: feecc4e449cf5a2d5e9918eb113c1991d8829061e3deb8f1bb88600c48c2ce95
@@ -304,4 +324,4 @@ entries:
     urls:
     - https://github.com/cobbler/charts/releases/download/orthos2-0.1.0/orthos2-0.1.0.tgz
     version: 0.1.0
-generated: "2026-11-26T15:45:10.499808699Z"
+generated: "2026-11-26T16:08:12.815998697Z"
